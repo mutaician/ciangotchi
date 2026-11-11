@@ -961,48 +961,47 @@ Panel {
           }
         }
 
-        // --- go play / come home --------------------------------------------
-        Button {
-          width: parent.width
-          visible: root.ready && !settingsControl.open
-          text: root.ready && root.petService.settings.roamEnabled === true
-            ? "Come home" : "Go play"
-          tooltipText: root.ready && root.petService.canRoam
-            ? "Let the pet roam and climb your windows"
-            : "Too young to go out alone"
-          fontFamily: root.fontFamily
-          enabled: root.ready && root.petService.canRoam
-            && !root.petService.farewellPending
-          opacity: enabled ? 1 : 0.4
-          onClicked: root.runAction("roam")
-        }
-
-        // --- ciangotchi: break mode -----------------------------------------
-        Button {
-          width: parent.width
-          visible: root.ready && !settingsControl.open && root.petService.onBreak
-          text: root.ready ? "End break (" + root.petService.breakLabel + ")" : ""
-          tooltipText: "Turn the idle nudges back on"
-          fontFamily: root.fontFamily
-          onClicked: root.petService.endBreak()
-        }
+        // --- go play / come home, and ciangotchi's break mode ---------------
+        // One row, so the card stays short enough to fit the screen.
         Row {
           width: parent.width
           spacing: Style.space(8)
-          visible: root.ready && !settingsControl.open && !root.petService.onBreak
+          visible: root.ready && !settingsControl.open
+          readonly property bool onBreak: root.ready && root.petService.onBreak
+          readonly property real slot: (width - 2 * spacing) / 3
 
           Button {
-            width: (parent.width - parent.spacing) / 2
-            text: root.ready ? "Break " + root.petService.breakMinutes + " min" : "Break"
-            tooltipText: "Pause the idle nudges for this long (change it in settings)"
+            width: parent.slot
+            text: root.ready && root.petService.settings.roamEnabled === true
+              ? "Come home" : "Go play"
+            tooltipText: root.ready && root.petService.canRoam
+              ? "Let the pet roam and climb your windows"
+              : "Too young to go out alone"
             fontFamily: root.fontFamily
-            onClicked: root.petService.startBreak(root.petService.breakMinutes)
+            enabled: root.ready && root.petService.canRoam
+              && !root.petService.farewellPending
+            opacity: enabled ? 1 : 0.4
+            onClicked: root.runAction("roam")
           }
           Button {
-            width: (parent.width - parent.spacing) / 2
-            text: "Break until back"
+            width: parent.onBreak ? parent.slot * 2 + parent.spacing : parent.slot
+            text: parent.onBreak
+              ? "End break (" + root.petService.breakLabel + ")"
+              : "Break " + (root.ready ? root.petService.breakMinutes : 30) + "m"
+            tooltipText: parent.onBreak ? "Turn the idle nudges back on"
+              : "Pause the idle nudges for this long (length is in settings)"
+            fontFamily: root.fontFamily
+            enabled: root.ready
+            onClicked: parent.onBreak ? root.petService.endBreak()
+              : root.petService.startBreak(root.petService.breakMinutes)
+          }
+          Button {
+            width: parent.slot
+            visible: !parent.onBreak
+            text: "Until back"
             tooltipText: "Pause the idle nudges until you end the break yourself"
             fontFamily: root.fontFamily
+            enabled: root.ready
             onClicked: root.petService.startBreak(0)
           }
         }
