@@ -1,180 +1,176 @@
 # Ciangotchi
 
-My personal fork of [Omagotchi](https://github.com/SLcode777/omagotchi) (MIT, credits in `CREDITS.md`): a 1-bit Omarchy desktop pet that also nags me when I go idle, takes breaks on request, and occasionally opens one of my saved links.
-
-A 1-bit desktop pet for [Omarchy](https://omarchy.org), in the spirit of the
-1997 originals. It hatches in your bar, grows up in a little room, and once it
-is old enough it goes out to roam your screen and climb your windows. Feed it,
-scrub it, cuddle it, let it play — and one day, let it go.
-
 <p align="center">
-  <img src="preview.png" width="410" alt="The Omagotchi panel: an egg warming under a desk lamp, its five need gauges and the care buttons">
+  <img src="docs/forms-preview.png" width="640" alt="Every form: the pod, then Saiyan, Super Saiyan, Super Saiyan 2, God, Blue, Ultra Ego and Majin, with icon, idle, fly, eat, sleep and rage frames">
 </p>
 
-## Needs
+A small Saiyan prince that lives in your [Omarchy](https://omarchy.org) bar.
+He trains while you work, nags you when you slack off, flies around your
+screen, and occasionally drags you off to a link you saved and never opened.
 
-| Need | Emote | Rises | You fix it by |
-| --- | :-: | --- | --- |
-| Hunger | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/emotes/hungry-dark.png"><img src="docs/emotes/hungry-light.png" width="32" alt="hungry emote"></picture> | over time — faster while updates are pending | the Feed button|
-| Hygiene | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/emotes/dirty-dark.png"><img src="docs/emotes/dirty-light.png" width="32" alt="dirty emote"></picture> | over time — faster while orphaned packages linger | pressing and **scrubbing it with your mouse** in its room  |
-| Energy | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/emotes/sleepy-dark.png"><img src="docs/emotes/sleepy-light.png" width="32" alt="sleepy emote"></picture> | over time — faster while roaming | letting it nap: it dozes off on its own when exhausted, wherever it is, and a sleepy pet brought home goes straight to bed |
-| Fun | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/emotes/bored-dark.png"><img src="docs/emotes/bored-light.png" width="32" alt="bored emote"></picture> | over time | letting it out to roam |
-| Affection | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/emotes/sad-dark.png"><img src="docs/emotes/sad-light.png" width="32" alt="sad emote"></picture> | over time — and a big fall makes it sad | petting it |
+A personal, non-commercial fan project, forked from
+[Omagotchi](https://github.com/SLcode777/omagotchi) by SLcode777 (MIT; see
+[CREDITS.md](CREDITS.md)). Dragon Ball belongs to Akira Toriyama, Toei and
+Shueisha.
 
-When several needs complain at once, the emote bubble above its head cycles
-through them. Care happens at home: while it's out roaming, the panel shows
-an empty room and feeding/washing wait until you call it back. Feeding or
-washing a sleeping pet wakes it first; if it is still tired afterwards it
-goes back to sleep on its own.
+> Work in progress, built for one person's setup. Things marked TEMP are
+> test helpers and will go away.
 
-Needs rise with active shell time. Your actual system state only flavors the pace —
-pending updates make it hungrier faster, orphans make it grubbier faster.
+## Power comes from focus
 
-## Growth
+He grows by **focused time**: a minute counts when you touched the keyboard
+or mouse in the last two minutes and you are not on a break. Idle time and
+breaks earn nothing.
 
-The pet grows through the classic stages — egg, baby, child, teen, adult. Age counts **active shell minutes**, so a machine that sleeps does
-not starve anyone, and the branch you get depends on your average care over
-the stage:
+| Form | Focused time |
+| --- | --- |
+| Saiyan pod | start |
+| Saiyan | 5 min |
+| Super Saiyan | 2 h |
+| Super Saiyan 2 | 8 h |
+| Super Saiyan God | 20 h |
+| Super Saiyan Blue | 40 h |
+| Ultra Ego | 80 h |
 
-- The egg hatches after 5 minutes
-- The baby becomes a child after 65 minutes
-- After ~8 active hours the child becomes a **neat teen** (average care ≥ 55)
-  or a **scruffy teen**.
-- After ~16 more hours, the teen settles into one of three adults: the **ace**, the
-  **easygoing one**, or the **gremlin** — a scruffy teen can never quite reach
-  ace, just like in the old charts.
+At Ultra Ego, **New Saiyan** retires him: a new pod lands and the generation
+counter goes up. **Majin Vegeta** is not on the ladder. While he roams, he
+sometimes turns Majin for a minute.
 
-Evolutions are announced with a desktop notification and a sound (if not muted). Care average resets at
-each stage, so a rough childhood can still turn into a fine adulthood.
+Needs rise with active time: **Hunger** (Feed him), **Rest** (he naps briefly
+when exhausted, and rarely: he is not Goku or Beerus), **Training** (roaming
+is training) and **Pride** (click him, if you dare).
 
+## He nags you
+
+When you have been idle for a while (default 10 minutes, adjustable in the
+settings), he acts up: the bar icon rages, he makes a noise, sometimes sends
+a notification in Vegeta's voice, and sometimes gets mischievous and opens a
+link (see below). He keeps pestering every few minutes while you stay away.
+Idle detection uses the compositor's idle protocol, so it works without a
+lock screen or screensaver.
+
+**Take a break** pauses all of it: for a set time (length is adjustable) or
+**until back**, when you end it yourself. Breaks earn no power either.
+
+## Links
+
+A nudge, or a click on the roaming pet, opens a random link. Each time he
+picks one source at random, then a link from it:
+
+- your own list (`links` in the settings)
+- your Brave bookmarks
+- [FMHY](https://fmhy.net): about 24,000 links, refreshed daily from
+  [their single-page export](https://api.fmhy.net/single-page), with anything
+  marked NSFW filtered out
+- anything in `~/.local/state/omarchy/ciangotchi-links.d/*.txt` (one URL per
+  line). A daily job fills it with your **YouTube Watch Later** videos
+  (`yt-dlp`) and your **X bookmarks** ([tweethoarder](https://github.com/tfriedel/tweethoarder)).
+
+Both of those read your login from Brave, only for youtube.com and x.com,
+and only when you set the daily job up yourself:
+
+```bash
+cp tools/systemd/ciangotchi-links.* ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now ciangotchi-links.timer
+```
+
+The scripts are in `tools/` (`refresh-fmhy.sh`, `refresh-youtube.sh`,
+`refresh-x.sh`). The X one expects a tweethoarder install at
+`~/.local/share/tweethoarder-src/repo`; they assume Brave with the GNOME
+keyring. Without them, FMHY and your bookmarks still work.
 
 ## Roaming
 
-Eggs and babies stay home. 
+"Go play" sends him out: a tractor beam carries him from the panel to the
+screen. He walks along the bottom and the tops of your windows, and **flies
+anywhere on screen**: hovering for a moment, then landing on a window or the
+floor. He rides a window if you move it and falls if you close it under him.
+He is click-through except for himself. Pick him up and drag him anywhere;
+drop him from too high and he is dizzy for a few seconds. A click is a
+petting, and it fetches a link. "Come home" calls him back.
 
-From the child stage on, click "Go play": the pet
-slides out of its room, drops through the card, and a **tractor beam**
-carries it down to the bottom edge of the screen, where it wanders — and
-**climbs your windows**: any window whose top border leaves enough headroom
-becomes a platform. It walks to a window's side, scales the wall, strolls
-along the top, rides the window if you move it, and hops back down (or falls,
-if you close the window under its feet). Window geometry comes from the
-Hyprland IPC through Quickshell; the overlay is fully click-through except
-the pet itself, which you can pet mid-stroll. Roaming keeps boredom down, but
-it is tiring — an exhausted pet naps on the spot, wherever it is.
+## Settings
 
-On a multi-monitor setup the pet goes out on the screen you click
-**Go play** on. To pin it to one output instead, pick a screen in the
-panel's settings (the cogwheel next to the mood line), or set `roamScreen`
-in `~/.local/state/omarchy/omagotchi-settings.json` to the output you want,
-spelled the way `hyprctl monitors` prints it:
+The cogwheel in the panel has idle minutes, nudges on/off, break length,
+sound volume and roam screen. The rest live in
+`~/.local/state/omarchy/ciangotchi-settings.json`:
 
-```json
-{ "roamScreen": "DP-1" }
-```
+| Key | Meaning |
+| --- | --- |
+| `idleMinutes` | idle time before a nudge (default 10) |
+| `mischiefChance` | chance a nudge also opens a link (default 0.25) |
+| `breakMinutes` | length of the timed break (default 30) |
+| `links` | your own list of URLs |
+| `includeBookmarks`, `includeFmhy` | turn those sources off |
+| `clickOpensLink` | whether a click on the roaming pet fetches a link |
+| `roamScale` | on-screen size of an art pixel while roaming (default 2) |
 
-A pinned screen always wins; leave it empty to follow your clicks. If the
-pinned screen is disconnected the pet falls back to the largest one rather
-than having nowhere to go. The file is read when the plugin loads, so
-restart the shell (`omarchy restart shell`) after editing it by hand —
-the in-panel setting applies immediately.
-
-You can also **pick it up**: press and drag to carry it by the scruff, then drop it anywhere. Drop it from too high and it lands
-stunned (it decreases its affection gauge so you'll need to cuddle it to show you're sorry).
-A plain click is still a petting. "Come home" summons the "gotchi" back to its panel.
-
-## Letting go
-
-Once it is an adult, the panel offers "Let it go". Say goodbye and let your "gotchi" walks off into the world. A new egg appears, and the generation counter ticks up.
+The file is read when the plugin loads, and the pet overwrites it when you
+use the panel. To edit it by hand, change it and then save any plugin file
+(or restart the shell) so it reloads.
 
 ## Looks and sounds
 
-The sprites are 16×16, one-bit, and tinted live with your theme's colors —
-switch themes and the pet molts.
+Sprites are 32×32 with a 16×16 head icon for the bar, in two layers: the body
+follows your theme's colour, and the hair and aura use each form's own colour
+(Base has dark hair). Forms are made by `tools/make-forms.py`, which writes
+text grids into `tools/sprites/`; `tools/gen-sprites.sh` turns those into the
+PNGs (needs ImageMagick). Edit a grid by hand and re-run the second script.
+Careful: re-running `make-forms.py` regenerates every grid.
 
-Big moments come with little sound effects — hatching, evolving, eating,
-being scrubbed, dozing off, being petted, the tractor beam, a thud and stars
-after a big fall, the ball, a hum now and then on its walks, and each adult's
-own goodbye. The speaker button at the bottom of the panel unfolds a volume
-slider for them (0 mutes; see [CREDITS.md](CREDITS.md) for sources).
+Sound effects are small placeholders from the original project (see
+[CREDITS.md](CREDITS.md)). Each event has a slot in `eventSounds` in
+`Service.qml`, so clips can be swapped without touching anything else.
 
 ## Install
 
-Standard Omarchy plugin install:
+Clone it into your Omarchy plugins folder and enable it:
 
 ```bash
-omarchy plugin add https://github.com/SLcode777/omagotchi --enable
+git clone git@github.com:mutaician/ciangotchi.git \
+  ~/.config/omarchy/plugins/mutaician.ciangotchi
 ```
 
-## Remove
+Then add `{ "id": "mutaician.ciangotchi" }` to a bar section in
+`~/.config/omarchy/shell.json` and restart the shell
+(`omarchy-restart-shell`).
 
-```bash
-omarchy plugin remove slcode777.omagotchi
-```
-
-State files (safe to delete) live at:
-
-- `~/.local/state/omarchy/omagotchi-settings.json`
-- `~/.local/state/omarchy/omagotchi-state.json`
-
-If the state file turns out unreadable (corrupt, or over 64 KiB), the plugin
-warns you with a notification and starts over with a fresh egg.
+State files (safe to delete) are in `~/.local/state/omarchy/`:
+`ciangotchi-settings.json` and `ciangotchi-state.json`. A save from the old
+Omagotchi growth model is migrated into a fresh pod.
 
 ## Dependencies
 
-- `pacman-contrib` for `checkupdates` (preinstalled on Omarchy)
-- `pipewire-audio` for `pw-play` sound effects (preinstalled on Omarchy)
-- `pacman` and `head` (coreutils) from the base system, `omarchy-notification-send` from Omarchy itself
+- `pacman-contrib` (`checkupdates`) and `pipewire-audio` (`pw-play`), both
+  preinstalled on Omarchy
+- `curl`, `xdg-open`: base system
+- optional, for the link jobs: `yt-dlp`, `uv` + tweethoarder, Brave
 
 ## What it executes, exactly
 
-All commands run with fixed argument lists, never through interpolated shell
-strings, and none of them elevate privileges:
+Fixed argument lists, never interpolated shell strings; nothing elevates
+privileges:
 
-- `checkupdates` — read-only, every 30 minutes: pending updates make hunger rise faster
-- `pacman -Qdtq` — read-only, every 30 minutes: orphaned packages make hygiene drop faster
-- `omarchy-notification-send` — evolution and farewell announcements
-- `pw-play` — plays the bundled sound effects (unless the volume is at 0)
-- `head -c 65536` — reads the two state files once at startup, capped at
-  64 KiB each; an oversized or unreadable file falls back to defaults
+- `checkupdates`, `pacman -Qdtq`: read-only, every 30 minutes. Pending
+  updates make hunger rise faster.
+- `omarchy-notification-send`: nudges and announcements
+- `pw-play`: sound effects (not when the volume is 0)
+- `xdg-open <url>`: opens a link, http and https only
+- `head`, `cat`: read the state files, Brave bookmarks and link files
+- `sh tools/refresh-fmhy.sh`: downloads the FMHY export, at most once a day
+- the systemd timer, if you install it, runs `tools/refresh-links.sh`:
+  `yt-dlp` and tweethoarder with your Brave cookies for youtube.com and
+  x.com only. They are read in memory and never printed or written.
 
-Window positions for climbing are read from the Hyprland IPC socket via
-Quickshell's Hyprland module — no shell commands involved. The plugin itself
-opens no sockets and downloads nothing; note that `checkupdates` fetches repo
-databases over the network into its own private database copy, as it always
-does. No credentials, no daemons, no sudoers rules.
+Window positions come from the Hyprland IPC through Quickshell.
 
-## More previews
+## Ideas
 
-### Gotchi as a newborn and as a child
-
-<p align="center">
-  <img src="preview2.png" width="410" alt="The Omagotchi panel: an egg warming under a desk lamp, its five need gauges and the care buttons">
-  <img src="preview3.png" width="410" alt="The Omagotchi panel: an egg warming under a desk lamp, its five need gauges and the care buttons">
-</p>
-
-I won't show much more so you can have some surprises. Its teen "bedroom" will surprise you for sure 🤘 (and so will its look if you don't take much care of it while its still a child ^^)
-
-### Gotchi happily assisting me while I'm developping it
-
-<p align="center">
-  <img src="preview4.png" width="410" alt="The Omagotchi panel: an egg warming under a desk lamp, its five need gauges and the care buttons">
-</p>
-
-
-
-## Drawing new sprites
-
-Sprites are white-on-transparent PNGs in `assets/sprites/`, named
-`<form>_<anim>_<a|b>.png` for the pets (16×16) and `decor_<name>.png` for the
-room (any size). Draw them in any pixel editor, or as plain text grids in
-`tools/sprites/*.txt` — `X` for a pixel, `.` for transparency, any rectangle
-— and regenerate with `tools/gen-sprites.sh` (needs ImageMagick). An
-animation that isn't drawn yet simply falls back to the idle frames, so new
-forms and actions can land one sprite at a time. 
+See [docs/IDEAS.md](docs/IDEAS.md): distraction watcher, sounds, a gravity
+room, workspace flights, an AI agent.
 
 ## License
 
-Code and sprites: MIT — see [LICENSE](LICENSE). The sound effects keep their
-own Creative Commons licenses, listed per file in [CREDITS.md](CREDITS.md)
-(three of them are CC BY-NC).
+Code and sprites: MIT, see [LICENSE](LICENSE). The sound effects keep their
+own licenses, listed in [CREDITS.md](CREDITS.md).
