@@ -773,6 +773,13 @@ Item {
     flushPet()
   }
   function testRage() { nudge.previewRestless() }
+  // Exhaust him right now: he lands (if flying) and naps; a click wakes him.
+  function testSleep() {
+    tirednessLevel = 90
+    sleeping = true
+    playSound("sleep")
+    flushPet()
+  }
 
   readonly property alias restless: nudge.restless
   readonly property alias onBreak: nudge.onBreak

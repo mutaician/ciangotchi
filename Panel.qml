@@ -908,6 +908,13 @@ Panel {
               enabled: root.ready
               onClicked: root.petService.testRage()
             }
+            Button {
+              text: "Test sleep"
+              tooltipText: "Temporary: put him to sleep now (click him to wake him)"
+              fontFamily: root.fontFamily
+              enabled: root.ready
+              onClicked: root.petService.testSleep()
+            }
           }
 
           Row {
