@@ -46,10 +46,7 @@ Item {
     bookmarksPath: "",
     // Random FMHY links (a daily-refreshed list, see tools/refresh-fmhy.sh).
     includeFmhy: true,
-    links: [
-      "https://x.com/i/bookmarks",
-      "https://www.youtube.com/playlist?list=WL"
-    ]
+    links: []
   })
   // Effects volume, 0 (mute) to 1.
   readonly property real soundVolume: {

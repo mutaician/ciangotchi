@@ -1,0 +1,6 @@
+[Unit]
+Description=Refresh Ciangotchi link sources
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/omarchy/plugins/mutaician.ciangotchi/tools/refresh-links.sh

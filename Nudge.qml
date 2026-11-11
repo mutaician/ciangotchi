@@ -221,7 +221,8 @@ Item {
   //   settings.links          your hand-picked links
   //   browser bookmarks       Brave, read from the Bookmarks file
   //   FMHY                    daily refresh by tools/refresh-fmhy.sh
-  //   ciangotchi-extra-links.txt   one URL per line; any script can write it
+  //   ciangotchi-links.d/*.txt  one URL per line (YouTube Watch Later, X
+  //                           bookmarks…); any script can drop a file in
   function pickLink() {
     var sources = []
     var mine = customLinks()
@@ -258,7 +259,8 @@ Item {
 
   Process {
     id: extraReader
-    command: ["head", "-c", "2000000", root.stateDir + "/ciangotchi-extra-links.txt"]
+    command: ["sh", "-c", "cat \"$1\"/*.txt 2>/dev/null | head -c 4000000", "sh",
+      root.stateDir + "/ciangotchi-links.d"]
     stdout: StdioCollector { id: extraOut }
     onExited: function(exitCode) {
       if (exitCode === 0) root.extraUrls = root.parseLines(extraOut.text)
