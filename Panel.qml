@@ -11,10 +11,10 @@ import qs.Ui
 // and the care actions. Every action maps to real system maintenance.
 Panel {
   id: root
-  moduleName: "slcode777.omagotchi"
+  moduleName: "mutaician.ciangotchi"
 
   // One panel instance exists per bar; only the largest screen's instance
-  // claims the IPC target, so `qs ipc call slcode777.omagotchi toggle` acts
+  // claims the IPC target, so `qs ipc call mutaician.ciangotchi toggle` acts
   // on a predictable panel instead of whichever instance registered first.
   readonly property var panelScreen: anchorItem && anchorItem.QsWindow.window
     ? anchorItem.QsWindow.window.screen : null
@@ -871,6 +871,56 @@ Panel {
               }
             }
           }
+
+          // --- ciangotchi: idle nudges ---
+          Row {
+            spacing: Style.space(8)
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Nudge after"
+              color: Qt.alpha(root.foreground, 0.7)
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              renderType: Text.NativeRendering
+            }
+            Button {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "-"
+              fontFamily: root.fontFamily
+              enabled: root.ready
+              onClicked: root.petService.updateSettings({
+                idleMinutes: Math.max(1, (Number(root.petService.settings.idleMinutes) || 10) - 1) })
+            }
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: (root.ready ? root.petService.settings.idleMinutes : 10) + " min"
+              color: root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              renderType: Text.NativeRendering
+            }
+            Button {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "+"
+              fontFamily: root.fontFamily
+              enabled: root.ready
+              onClicked: root.petService.updateSettings({
+                idleMinutes: Math.min(240, (Number(root.petService.settings.idleMinutes) || 10) + 1) })
+            }
+          }
+
+          Button {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: root.ready && root.petService.settings.nudgesEnabled === false
+              ? "Nudges: off" : "Nudges: on"
+            tooltipText: "Whether the pet bugs you when you are idle"
+            fontFamily: root.fontFamily
+            enabled: root.ready
+            onClicked: root.petService.updateSettings({
+              nudgesEnabled: root.petService.settings.nudgesEnabled === false })
+          }
         }
 
         // --- go play / come home --------------------------------------------
@@ -887,6 +937,20 @@ Panel {
             && !root.petService.farewellPending
           opacity: enabled ? 1 : 0.4
           onClicked: root.runAction("roam")
+        }
+
+        // --- ciangotchi: break mode -----------------------------------------
+        Button {
+          width: parent.width
+          visible: root.ready && !settingsControl.open
+          text: root.ready && root.petService.onBreak
+            ? "End break (" + root.petService.breakMinutesLeft + " min left)"
+            : "Take a break"
+          tooltipText: "Pause the idle nudges"
+          fontFamily: root.fontFamily
+          enabled: root.ready
+          onClicked: root.petService.onBreak
+            ? root.petService.endBreak() : root.petService.startBreak()
         }
 
       }

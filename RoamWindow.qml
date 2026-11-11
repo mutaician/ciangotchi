@@ -60,7 +60,7 @@ PanelWindow {
   color: "transparent"
   exclusionMode: ExclusionMode.Ignore
   WlrLayershell.layer: WlrLayer.Top
-  WlrLayershell.namespace: "omagotchi"
+  WlrLayershell.namespace: "ciangotchi"
   // Click-through everywhere except the pet — except mid-press, where the
   // whole window catches input: on an empty workspace Hyprland drops the
   // implicit grab on layer surfaces, so a cursor outrunning the sprite would

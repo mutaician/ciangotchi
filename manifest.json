@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "slcode777.omagotchi",
-  "name": "Omagotchi",
+  "id": "mutaician.ciangotchi",
+  "name": "Ciangotchi",
   "version": "0.1.0",
-  "author": "SLcode777",
+  "author": "mutaician",
   "license": "MIT",
   "description": "A 1-bit desktop pet in your bar, in the spirit of the 1997 originals: feed it, scrub it clean, cuddle it, and let it out to roam your screen and climb your windows. It hatches, grows, and evolves with the care you give.",
   "kinds": ["service", "bar-widget"],
@@ -12,7 +12,7 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Omagotchi",
+    "displayName": "Ciangotchi",
     "description": "Your Omarchy companion, living in the bar. Click to open its home.",
     "category": "Fun",
     "allowMultiple": false,

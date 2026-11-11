@@ -22,8 +22,8 @@ Item {
   readonly property string stateHome: Quickshell.env("XDG_STATE_HOME")
     || ((Quickshell.env("HOME") || "") + "/.local/state")
   readonly property string stateDir: stateHome + "/omarchy"
-  readonly property string settingsPath: stateDir + "/omagotchi-settings.json"
-  readonly property string petPath: stateDir + "/omagotchi-state.json"
+  readonly property string settingsPath: stateDir + "/ciangotchi-settings.json"
+  readonly property string petPath: stateDir + "/ciangotchi-state.json"
 
   readonly property var defaultSettings: ({
     roamEnabled: false,
@@ -32,7 +32,23 @@ Item {
     // `hyprctl monitors` prints, e.g. "DP-1"). Empty keeps the default: the
     // largest screen.
     roamScreen: "",
-    soundVolume: 0.5
+    soundVolume: 0.5,
+    // --- ciangotchi: idle nudges (see Nudge.qml) ---
+    nudgesEnabled: true,
+    idleMinutes: 10,
+    // Chance that a nudge opens a link as well.
+    mischiefChance: 0.25,
+    // Epoch ms until which nudges are paused; 0 = not on a break.
+    breakUntilMs: 0,
+    breakMinutes: 30,
+    // Random links the pet may open, plus your browser's bookmarks.
+    includeBookmarks: true,
+    bookmarksPath: "",
+    links: [
+      "https://fmhy.net",
+      "https://x.com/i/bookmarks",
+      "https://www.youtube.com/playlist?list=WL"
+    ]
   })
   // Effects volume, 0 (mute) to 1.
   readonly property real soundVolume: {
@@ -203,6 +219,7 @@ Item {
   readonly property string stateAnim: {
     if (!initialized || stage === "egg") return "idle"
     if (sleeping) return "sleep"
+    if (nudge.restless) return "sad"
     switch (mood) {
     case "hungry": return "hungry"
     case "dirty": return "dirty"
@@ -242,7 +259,7 @@ Item {
     case "lonely": return "Lonely — pet me!"
     case "meh": return "Doing okay"
     case "happy": return "Happy!"
-    default: return "Omagotchi"
+    default: return "Ciangotchi"
     }
   }
 
@@ -325,7 +342,7 @@ Item {
     careCount = 0
     flushPet()
     playSound(nextStage === "baby" ? "hatch" : "evolve")
-    notify("Omagotchi", message)
+    notify("Ciangotchi", message)
   }
 
   // --- sounds ----------------------------------------------------------------
@@ -372,7 +389,7 @@ Item {
   function notify(title, body) {
     Quickshell.execDetached([
       notificationExecutable,
-      "--app-name", "omagotchi",
+      "--app-name", "ciangotchi",
       "-u", "normal",
       title,
       body
@@ -459,7 +476,7 @@ Item {
     // the child stage).
     updateSettings({ roamEnabled: false })
     flushPet()
-    notify("Omagotchi", "Your companion said goodbye and walked off into the world… a new egg appeared! (Gen " + generation + ")")
+    notify("Ciangotchi", "Your companion said goodbye and walked off into the world… a new egg appeared! (Gen " + generation + ")")
   }
 
   // A deliberate wake-up — petting, grabbing, or sending it out — unlike
@@ -559,7 +576,7 @@ Item {
       var parsedSettings = loadedSettingsText !== "" ? JSON.parse(loadedSettingsText) : {}
       updateSettingsInMemory(parsedSettings)
     } catch (error) {
-      console.warn("omagotchi: settings file unreadable (" + error + "), using defaults")
+      console.warn("ciangotchi: settings file unreadable (" + error + "), using defaults")
       settings = defaultSettings
     }
 
@@ -615,8 +632,8 @@ Item {
 
     initialized = true
     if (saveProblem !== "") {
-      console.warn("omagotchi: save file " + petPath + " " + saveProblem + " — starting over")
-      notify("Omagotchi couldn't read its save file",
+      console.warn("ciangotchi: save file " + petPath + " " + saveProblem + " — starting over")
+      notify("Ciangotchi couldn't read its save file",
              "It was corrupt or oversized, so a fresh egg takes over.")
     }
     if (hatch) flushPet()
@@ -691,6 +708,18 @@ Item {
     running: root.initialized
     repeat: true
     onTriggered: updatesProc.running = true
+  }
+
+  // --- ciangotchi: idle nudges -------------------------------------------------
+
+  readonly property alias restless: nudge.restless
+  readonly property alias onBreak: nudge.onBreak
+  readonly property alias breakMinutesLeft: nudge.breakMinutesLeft
+  function startBreak() { nudge.startBreak(Number(settings.breakMinutes) || 30) }
+  function endBreak() { nudge.endBreak() }
+  Nudge {
+    id: nudge
+    petService: root
   }
 
   // --- roaming ---------------------------------------------------------------

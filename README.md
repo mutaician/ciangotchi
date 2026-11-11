@@ -1,4 +1,6 @@
-# Omagotchi
+# Ciangotchi
+
+My personal fork of [Omagotchi](https://github.com/SLcode777/omagotchi) (MIT, credits in `CREDITS.md`): a 1-bit Omarchy desktop pet that also nags me when I go idle, takes breaks on request, and occasionally opens one of my saved links.
 
 A 1-bit desktop pet for [Omarchy](https://omarchy.org), in the spirit of the
 1997 originals. It hatches in your bar, grows up in a little room, and once it

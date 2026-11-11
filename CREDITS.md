@@ -1,4 +1,6 @@
-# Omagotchi credits
+# Ciangotchi credits
+
+Ciangotchi is a personal fork of Omagotchi by SLcode777 (MIT).
 
 ## Sound effects
 
