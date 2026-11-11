@@ -76,6 +76,17 @@ Item {
   // True for a while after a nudge: views make the pet fidget.
   property bool restless: false
 
+  // Focus: you touched the keyboard or mouse in the last two minutes and are
+  // not on a break. The pet's power only grows while this is true.
+  IdleMonitor {
+    id: focusMonitor
+    enabled: !!root.petService && root.petService.initialized
+    timeout: 120
+    respectInhibitors: false
+  }
+  readonly property bool focused: focusMonitor.enabled && !focusMonitor.isIdle
+    && !onBreak
+
   IdleMonitor {
     id: monitor
     enabled: root.watching
@@ -121,12 +132,12 @@ Item {
   // --- the nudge -------------------------------------------------------------
 
   readonly property var nagLines: [
-    "Hey. You've been away from the keyboard. Work?",
-    "Psst. Remember what you were doing?",
-    "The scrolling isn't going to build itself a project.",
-    "I'm bored. Let's get back to it.",
-    "Ten minutes of nothing. Come on.",
-    "Your future self is watching. Disappointed, but watching."
+    "Pathetic. Get back to work.",
+    "Kakarot would have finished by now.",
+    "A Saiyan prince does not idle. Train!",
+    "Are you scrolling again? Disgraceful.",
+    "I did not come this far to watch you do nothing.",
+    "Your power level is dropping. Back to the keyboard."
   ]
 
   function pick(list) {
@@ -148,7 +159,7 @@ Item {
       var url = pickLink()
       if (url !== "") {
         openLink(url)
-        petService.notify("Ciangotchi", "I found something for you: " + hostOf(url))
+        petService.notify("Ciangotchi", "Hmph. Look at this instead: " + hostOf(url))
         return
       }
     }
@@ -244,11 +255,11 @@ Item {
     lastRequestMs = now
     var url = pickLink()
     if (url === "") {
-      petService.notify("Ciangotchi", "I have no links to fetch yet.")
+      petService.notify("Ciangotchi", "I have nothing to show you yet.")
       return
     }
     openLink(url)
-    petService.notify("Ciangotchi", "Fetched: " + hostOf(url))
+    petService.notify("Ciangotchi", "Fine. Here: " + hostOf(url))
   }
 
   function openLink(url) {

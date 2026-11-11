@@ -69,10 +69,11 @@ PanelWindow {
 
   readonly property int petScale: {
     var value = petService && petService.settings
-      ? Number(petService.settings.roamScale) : 3
-    return value >= 2 && value <= 6 ? Math.round(value) : 3
+      ? Number(petService.settings.roamScale) : 2
+    return value >= 1 && value <= 4 ? Math.round(value) : 2
   }
-  readonly property int spriteSize: 16 * petScale
+  // Sprites are 32x32 art pixels, drawn petScale screen pixels each.
+  readonly property int spriteSize: 32 * petScale
   // Headroom above a platform so the pet never pokes off-screen.
   readonly property int headroom: spriteSize + 12
 
@@ -150,9 +151,10 @@ PanelWindow {
   property var pendingClimb: null  // {wallX, platform} after the walk phase
   property bool facingLeft: false
 
-  readonly property real walkSpeed: petScale * 22   // px/s
-  readonly property real climbSpeed: petScale * 16
-  readonly property real fallSpeed: petScale * 110
+  // Speeds follow the sprite size so a bigger pet is not a slower one.
+  readonly property real walkSpeed: spriteSize * 1.4   // px/s
+  readonly property real climbSpeed: spriteSize * 1.0
+  readonly property real fallSpeed: spriteSize * 7
 
   function currentSurfaceBounds() {
     return support
@@ -586,7 +588,8 @@ PanelWindow {
     Behavior on rotation { NumberAnimation { duration: 150 } }
 
     readonly property bool asleep: root.petService && root.petService.sleeping
-    form: root.petService.form
+    form: root.petService.displayForm
+    accent: root.petService.displayAccent
     anim: {
       if (asleep) return "sleep"
       switch (root.action) {
@@ -597,7 +600,7 @@ PanelWindow {
       case "stunned": return "stunned"
       default: return root.petService.transientAnim !== ""
         ? root.petService.transientAnim
-        : root.petService.stateAnim
+        : (root.petService.eventForm !== "" ? "rage" : root.petService.stateAnim)
       }
     }
     // A climb without its dedicated sprite reuses the walk frames (rotated).

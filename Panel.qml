@@ -46,16 +46,16 @@ Panel {
         ? "rising faster: " + petService.pendingUpdates + " updates pending"
         : "rises over time",
       action: "feed", actionLabel: "Feed", needsHome: true,
-      actionTip: petService.stage === "egg" ? "Still an egg — nothing to feed yet"
+      actionTip: petService.stage === "pod" ? "Still in the pod — nothing to feed yet"
         : petService.eating ? "Nom nom nom…"
         : petIsOut ? "It's out playing — call it home first"
         : "A good meal, hunger back to zero" },
-    { label: "Energy", value: petService.tiredness,
-      hint: petService.sleeping ? "recovering — Zzz…" : "naps when exhausted",
+    { label: "Rest", value: petService.tiredness,
+      hint: petService.sleeping ? "recovering — Zzz…" : "rests when exhausted",
       action: "", actionLabel: "", actionTip: "" },
-    { label: "Fun", value: petService.boredom, hint: "roaming cures boredom",
+    { label: "Training", value: petService.boredom, hint: "roaming is training",
       action: "", actionLabel: "", actionTip: "" },
-    { label: "Affection", value: petService.loneliness, hint: "click the pet!",
+    { label: "Pride", value: petService.loneliness, hint: "click him, if you dare",
       action: "", actionLabel: "", actionTip: "" }
   ] : []
 
@@ -217,36 +217,8 @@ Panel {
           // sprite's own pixels (integers keep the pixel grid crisp; 1.5 is
           // tolerable on a dim piece). The room stays furnished while the
           // pet is out.
-          readonly property var stageDecor: ({
-            // beam = the shade's open edge in sprite pixels [x1, y1, x2, y2];
-            // a cone of light is cast from it onto the pet.
-            egg: [
-              { name: "lamp", x: 0.60, y: 0.04, px: 1.5, beam: [1, 13, 14, 25], shelf: true }
-            ],
-            baby: [
-              { name: "mobile", x: 0.08, y: 0.04, px: 2, sway: true }
-            ],
-            child: [
-              { name: "ball", x: 0.74, y: 0.52, px: 2, bounce: true }
-            ],
-            teen_neat: [
-              { name: "poster", x: 0.72, y: 0.08, px: 2 },
-              { name: "controller", x: 0.11, y: 0.76, px: 2 }
-            ],
-            teen_scruffy: [
-              { name: "poster", x: 0.72, y: 0.08, px: 2 },
-              { name: "sock", x: 0.11, y: 0.76, px: 2 }
-            ],
-            adult_gremlin: [
-              { name: "plant_gremlin", x: 0.80, y: 0.48, px: 3 }
-            ],
-            adult_ok: [
-              { name: "plant_ok", x: 0.80, y: 0.48, px: 3 }
-            ],
-            adult_ace: [
-              { name: "plant_ace", x: 0.80, y: 0.48, px: 1 }
-            ]
-          })
+          // Gravity-room furnishings will go here; none are drawn yet.
+          readonly property var stageDecor: ({})
 
           // Form-specific decor wins over the shared stage decor.
           Repeater {
@@ -392,15 +364,13 @@ Panel {
             id: bigPet
             anchors.centerIn: parent
             visible: !root.petIsOut && !root.exiting && !root.entering
-            width: Style.space(80)
-            height: Style.space(80)
-            form: root.ready ? root.petService.form : "egg"
+            width: Style.space(96)
+            height: Style.space(96)
+            form: root.ready ? root.petService.displayForm : "pod"
+            accent: root.ready ? root.petService.displayAccent : ""
             anim: {
               if (!root.ready) return "idle"
               if (root.petService.transientAnim !== "") return root.petService.transientAnim
-              // Teens hanging out in their room are on their laptop, obviously.
-              if (root.petService.stage === "teen" && root.petService.stateAnim === "idle")
-                return "laptop"
               return root.petService.stateAnim
             }
             frameMs: anim === "eat" ? 350 : 600
@@ -652,7 +622,7 @@ Panel {
           horizontalAlignment: Text.AlignHCenter
           text: root.ready
             ? root.petService.stageLabel + " · "
-              + root.ageLabel(root.petService.ageMinutes) + " old"
+              + root.ageLabel(root.petService.focusMinutes) + " focused"
               + (root.petService.generation > 1
                 ? " · Gen " + root.petService.generation : "")
             : ""
@@ -678,10 +648,10 @@ Panel {
 
         Button {
           anchors.horizontalCenter: parent.horizontalCenter
-          visible: root.ready && root.petService.stage === "adult"
+          visible: root.ready && root.petService.stage === "ego"
             && !root.petService.farewellPending && !settingsControl.open
-          text: "Let it go"
-          tooltipText: "Say goodbye — a new egg will appear (Gen "
+          text: "New Saiyan"
+          tooltipText: "Hand over to the next Saiyan — a new pod lands (Gen "
             + (root.ready ? root.petService.generation + 1 : 2) + ")"
           fontFamily: root.fontFamily
           onClicked: farewellConfirm.opened = true
@@ -763,7 +733,7 @@ Panel {
                     && (needRow.modelData.action !== "roam"
                         || (root.petService.canRoam && !root.petService.farewellPending))
                     && (needRow.modelData.action !== "feed"
-                        || (root.petService.stage !== "egg" && !root.petService.eating))
+                        || (root.petService.stage !== "pod" && !root.petService.eating))
                     && (needRow.modelData.needsHome !== true || !root.petIsOut)
                   opacity: enabled ? 1 : 0.4
                   onClicked: root.runAction(needRow.modelData.action)
@@ -1020,9 +990,10 @@ Panel {
 
         PetSprite {
           id: exitPet
-          width: Style.space(80)
-          height: Style.space(80)
-          form: root.ready ? root.petService.form : "egg"
+          width: Style.space(96)
+          height: Style.space(96)
+          form: root.ready ? root.petService.displayForm : "pod"
+          accent: root.ready ? root.petService.displayAccent : ""
           // Legs pumping on the way out; serenely carried on the way in.
           anim: root.entering ? "idle" : "walk"
           fallbackAnim: "idle"
@@ -1068,8 +1039,8 @@ Panel {
       ConfirmDialog {
         id: farewellConfirm
         anchors.fill: parent
-        message: "Let your companion go? It will head out into the big wide world, and a new egg will appear."
-        confirmText: "Say goodbye"
+        message: "Retire the prince? He heads out into the universe, and a new Saiyan pod lands."
+        confirmText: "Retire him"
         onConfirmed: {
           opened = false
           if (!root.ready) return

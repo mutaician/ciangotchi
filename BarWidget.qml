@@ -85,12 +85,14 @@ BarWidget {
 
       PetSprite {
         anchors.fill: parent
-        form: root.serviceReady ? root.petService.form : "egg"
-        anim: root.serviceReady ? root.petService.stateAnim : "idle"
+        // The bar shows the 16x16 head icon of the current form.
+        form: root.serviceReady ? root.petService.displayForm : "pod"
+        anim: "icon"
+        accent: root.serviceReady ? root.petService.displayAccent : ""
         // An unhappy pet fidgets in the bar to catch the eye.
         frameMs: root.serviceReady && root.petService.restless ? 250
           : root.serviceReady
-          && root.petService.mood !== "happy" && root.petService.mood !== "egg"
+          && root.petService.mood !== "happy" && root.petService.mood !== "pod"
           && root.petService.mood !== "sleeping"
           ? 350 : 900
         tint: button.foreground

@@ -27,7 +27,8 @@ Item {
 
   readonly property var defaultSettings: ({
     roamEnabled: false,
-    roamScale: 3,
+    // Art pixels are drawn this many screen pixels big (sprites are 32x32).
+    roamScale: 2,
     // Which output the pet roams on, named as Hyprland names it (whatever
     // `hyprctl monitors` prints, e.g. "DP-1"). Empty keeps the default: the
     // largest screen.
@@ -64,9 +65,11 @@ Item {
 
   // Growth, Gen1-chart style: the stage advances with active shell minutes,
   // and the branch taken depends on average happiness over the stage.
-  property string stage: "egg"     // egg | baby | child | teen | adult
-  property string form: "egg"      // sprite prefix in assets/sprites/
+  property string stage: "pod"     // pod | base | ssj | ssj2 | god | blue | ego
+  property string form: "pod"      // sprite prefix in assets/sprites/
   property real ageMinutes: 0
+  // Minutes of real work (see Nudge.focused). This is what powers it up.
+  property real focusMinutes: 0
   property real careSum: 0
   property int careCount: 0
   property int generation: 1
@@ -79,8 +82,29 @@ Item {
   property real lonelinessLevel: 0
   property bool sleeping: false
 
-  readonly property var knownForms: ["egg", "baby", "child", "teen_neat",
-    "teen_scruffy", "adult_ace", "adult_ok", "adult_gremlin"]
+  // The power ladder: a form is reached after this many focused minutes.
+  // pod = the Saiyan space pod it hatches from. majin is not on the ladder:
+  // it is a roaming event (see eventForm).
+  readonly property var ladder: [
+    { stage: "pod",   at: 0,    label: "Saiyan pod" },
+    { stage: "base",  at: 5,    label: "Saiyan" },
+    { stage: "ssj",   at: 120,  label: "Super Saiyan" },
+    { stage: "ssj2",  at: 480,  label: "Super Saiyan 2" },
+    { stage: "god",   at: 1200, label: "Super Saiyan God" },
+    { stage: "blue",  at: 2400, label: "Super Saiyan Blue" },
+    { stage: "ego",   at: 4800, label: "Ultra Ego" }
+  ]
+  readonly property var knownForms: ["pod", "base", "ssj", "ssj2", "god", "blue", "ego"]
+
+  // Hair/aura colour per form; "dim" = a dimmed theme tint.
+  readonly property var formAccents: ({
+    pod: "#ff5d7a", base: "dim", ssj: "#ffd23c", ssj2: "#ffd23c",
+    god: "#ff4d5e", blue: "#3fb8ff", ego: "#c04dff", majin: "#ffd23c"
+  })
+  // A temporary form shown over the real one (Majin, while roaming).
+  property string eventForm: ""
+  readonly property string displayForm: eventForm !== "" ? eventForm : form
+  readonly property string displayAccent: formAccents[displayForm] || ""
 
   property string omarchyPath: Quickshell.env("OMARCHY_PATH") || ""
   readonly property string notificationExecutable: omarchyPath !== ""
@@ -123,10 +147,12 @@ Item {
   readonly property real happiness: Math.round(100 - worstNeed)
 
   readonly property real careAverage: careCount > 0 ? careSum / careCount : 100
-  readonly property bool canRoam: stage !== "egg" && stage !== "baby"
-  readonly property string stageLabel: ({
-    egg: "Egg", baby: "Baby", child: "Child", teen: "Teen", adult: "Adult"
-  })[stage] || stage
+  readonly property bool canRoam: stage !== "pod"
+  readonly property string stageLabel: {
+    for (var i = 0; i < ladder.length; i++) if (ladder[i].stage === stage) return ladder[i].label
+    return stage
+  }
+  readonly property real focusHours: focusMinutes / 60
 
   // Where the pet left its panel, in screen coordinates (center x, feet y),
   // so the roaming window can pick up the fall right under the card. Negative
@@ -195,7 +221,7 @@ Item {
   // needs complain at once the bubble cycles through them every few seconds.
   // Views hide the bubble when the file doesn't exist yet.
   readonly property var activeEmotes: {
-    if (!initialized || sleeping || stage === "egg") return []
+    if (!initialized || sleeping || stage === "pod") return []
     var list = []
     if (hunger >= 60) list.push("emote_hungry")
     if (dirtiness >= 60) list.push("emote_dirty")
@@ -218,9 +244,9 @@ Item {
   // The idle-state animation views should show (falls back to plain idle in
   // PetSprite when the dedicated sprite doesn't exist yet).
   readonly property string stateAnim: {
-    if (!initialized || stage === "egg") return "idle"
+    if (!initialized || stage === "pod") return "idle"
     if (sleeping) return "sleep"
-    if (nudge.restless) return "sad"
+    if (nudge.restless) return "rage"
     switch (mood) {
     case "hungry": return "hungry"
     case "dirty": return "dirty"
@@ -234,7 +260,7 @@ Item {
   // Priority order: sleep is a state, then the loudest complaint wins.
   readonly property string mood: {
     if (!initialized) return "sleeping"
-    if (stage === "egg") return "egg"
+    if (stage === "pod") return "pod"
     if (sleeping) return "sleeping"
     if (hunger >= 60) return "hungry"
     if (dirtiness >= 60) return "dirty"
@@ -247,19 +273,19 @@ Item {
 
   readonly property string moodLabel: {
     switch (mood) {
-    case "egg": return "An egg. Something wiggles inside…"
+    case "pod": return "A pod. Something is stirring inside…"
     case "sleeping": return "Zzz…"
     case "hungry": return pendingUpdates > 0
-      ? "Hungry — and those " + pendingUpdates + " pending updates smell delicious"
-      : "Hungry — feed me!"
+      ? "Hungry. Those " + pendingUpdates + " pending updates look edible"
+      : "I need food. A Saiyan needs to eat."
     case "dirty": return orphanCount > 0
       ? "Feeling gross — the " + orphanCount + " orphaned packages don't help"
       : "Feeling gross — bath time?"
-    case "sleepy": return "Sleepy — about to doze off…"
-    case "bored": return "Bored — let me out to play!"
-    case "lonely": return "Lonely — pet me!"
-    case "meh": return "Doing okay"
-    case "happy": return "Happy!"
+    case "sleepy": return "Tired. Even a prince has limits."
+    case "bored": return "I need a fight. Let me out to train."
+    case "lonely": return "Where is my respect?"
+    case "meh": return "Hmph. Acceptable."
+    case "happy": return "At full power."
     default: return "Ciangotchi"
     }
   }
@@ -269,20 +295,23 @@ Item {
   // Per-stage personalities: babies nap constantly, children burst with
   // energy and want out, teens raid the fridge and stay in. See ROADMAP §3.
   readonly property var stageRates: ({
-    baby:  { hunger: 1.5, dirt: 1, tired: 2.0, fun: 0.5 },
-    child: { hunger: 1,   dirt: 1, tired: 1,   fun: 1.5 },
-    teen:  { hunger: 2,   dirt: 1, tired: 0.8, fun: 0.5 },
-    adult: { hunger: 1,   dirt: 1, tired: 1,   fun: 1 }
+    adult: { hunger: 1, dirt: 1, tired: 1, fun: 1 }
   })
 
   // Per-active-minute rates. System state flavors the pace: pending updates
   // and orphans speed up hunger/dirt, roaming is fun but tiring.
   function applyMinute() {
-    if (stage === "egg") return // an egg has no needs yet
+    if (stage === "pod") return // a pod has no needs yet
     var rates = stageRates[stage] || stageRates.adult
 
-    // Out and about, it hums to itself once or twice an hour.
+    // Out and about, it hums to itself once or twice an hour…
     if (roaming && !sleeping && Math.random() < 1.5 / 60) playSound("hum")
+    // …and now and then Babidi's influence takes hold: Majin Vegeta, for a minute.
+    if (roaming && !sleeping && eventForm === "" && Math.random() < 1 / 90) {
+      eventForm = "majin"
+      majinTimer.restart()
+      playSound("evolve")
+    }
 
     hungerLevel = Math.min(100,
       hungerLevel + (pendingUpdates > 0 ? 0.5 : 0.33) * rates.hunger)
@@ -319,21 +348,22 @@ Item {
 
   // --- growth ----------------------------------------------------------------
 
+  readonly property var evolveLines: ({
+    base:  "Hmph. The pod opened. I am Vegeta.",
+    ssj:   "Super Saiyan. Behold the prince's power!",
+    ssj2:  "Super Saiyan 2. My power keeps rising.",
+    god:   "Super Saiyan God. Divine ki, and it is mine.",
+    blue:  "Super Saiyan Blue. Look at what hard work can do.",
+    ego:   "Ultra Ego. The stronger the enemy, the stronger I get."
+  })
+
+  // One step up the ladder per call, when focused minutes allow it.
   function maybeEvolve() {
-    if (stage === "egg" && ageMinutes >= 5)
-      return evolve("baby", "baby", "The egg hatched!")
-    if (stage === "baby" && ageMinutes >= 70)
-      return evolve("child", "child", "Your baby grew into a child!")
-    if (stage === "child" && ageMinutes >= 550)
-      return evolve("teen", careAverage >= 55 ? "teen_neat" : "teen_scruffy",
-        "Your child is a teen now. Interesting haircut.")
-    if (stage === "teen" && ageMinutes >= 1510) {
-      var neat = form === "teen_neat"
-      var next = "adult_gremlin"
-      if (careAverage >= 75) next = neat ? "adult_ace" : "adult_ok"
-      else if (careAverage >= 40) next = neat ? "adult_ok" : "adult_gremlin"
-      return evolve("adult", next, "Your teen is all grown up.")
-    }
+    var idx = -1
+    for (var i = 0; i < ladder.length; i++) if (ladder[i].stage === stage) idx = i
+    if (idx < 0 || idx >= ladder.length - 1) return
+    var next = ladder[idx + 1]
+    if (focusMinutes >= next.at) evolve(next.stage, next.stage, evolveLines[next.stage])
   }
 
   function evolve(nextStage, nextForm, message) {
@@ -342,7 +372,7 @@ Item {
     careSum = 0
     careCount = 0
     flushPet()
-    playSound(nextStage === "baby" ? "hatch" : "evolve")
+    playSound(nextStage === "base" ? "hatch" : "evolve")
     notify("Ciangotchi", message)
   }
 
@@ -446,22 +476,23 @@ Item {
   property bool farewellPending: false
 
   function beginFarewell() {
-    if (stage !== "adult" || farewellPending) return
+    if (stage !== "ego" || farewellPending) return
     wakeUp()
     farewellPending = true
   }
 
   function farewellSoundEvent() {
-    return "farewell_" + form.replace("adult_", "")
+    return "farewell_ace"
   }
 
   function sendOff() {
-    if (stage !== "adult") return
+    if (stage !== "ego") return
     farewellPending = false
     generation += 1
-    stage = "egg"
-    form = "egg"
+    stage = "pod"
+    form = "pod"
     ageMinutes = 0
+    focusMinutes = 0
     careSum = 0
     careCount = 0
     hungerLevel = 0
@@ -477,7 +508,7 @@ Item {
     // the child stage).
     updateSettings({ roamEnabled: false })
     flushPet()
-    notify("Ciangotchi", "Your companion said goodbye and walked off into the world… a new egg appeared! (Gen " + generation + ")")
+    notify("Ciangotchi", "The prince has moved on. A new Saiyan pod landed. (Gen " + generation + ")")
   }
 
   // A deliberate wake-up — petting, grabbing, or sending it out — unlike
@@ -556,6 +587,7 @@ Item {
       stage: stage,
       form: form,
       ageMinutes: ageMinutes,
+      focusMinutes: focusMinutes,
       careSum: careSum,
       careCount: careCount,
       generation: generation,
@@ -590,9 +622,10 @@ Item {
       var pet = loadedPetText !== "" ? JSON.parse(loadedPetText) : {}
       hatchedAtMs = num(pet.hatchedAtMs)
       lastPetMs = num(pet.lastPetMs)
-      stage = typeof pet.stage === "string" ? pet.stage : "egg"
-      form = typeof pet.form === "string" ? pet.form : "egg"
+      stage = typeof pet.stage === "string" ? pet.stage : "pod"
+      form = typeof pet.form === "string" ? pet.form : "pod"
       ageMinutes = num(pet.ageMinutes)
+      focusMinutes = num(pet.focusMinutes)
       careSum = num(pet.careSum)
       careCount = Math.round(num(pet.careCount))
       generation = Math.max(1, Math.round(num(pet.generation)))
@@ -614,16 +647,16 @@ Item {
       hatchedAtMs = 0; lastPetMs = 0
       saveProblem = "not valid JSON (" + petError + ")"
     }
-    // A corrupt or hand-edited form or stage falls back to a fresh egg
-    // rather than a broken sprite path or NaN-poisoned need rates.
-    if (knownForms.indexOf(form) < 0
-        || ["egg", "baby", "child", "teen", "adult"].indexOf(stage) < 0) {
-      if (saveProblem === "") saveProblem = "unknown stage/form " + stage + "/" + form
-      stage = "egg"
-      form = "egg"
+    // Saves from the old growing-pet model (egg, baby, teen…) or a hand-edited
+    // form start again as a fresh pod, quietly: that is a migration, not damage.
+    if (knownForms.indexOf(form) < 0 || knownForms.indexOf(stage) < 0) {
+      stage = "pod"
+      form = "pod"
       ageMinutes = 0
+      focusMinutes = 0
       careSum = 0
       careCount = 0
+      hatch = true   // persist the migration right away
     }
     if (hatchedAtMs === 0) {
       hatchedAtMs = Date.now()
@@ -635,7 +668,7 @@ Item {
     if (saveProblem !== "") {
       console.warn("ciangotchi: save file " + petPath + " " + saveProblem + " — starting over")
       notify("Ciangotchi couldn't read its save file",
-             "It was corrupt or oversized, so a fresh egg takes over.")
+             "It was corrupt or oversized, so a fresh pod takes over.")
     }
     if (hatch) flushPet()
 
@@ -690,6 +723,7 @@ Item {
       root.nowMs = Date.now()
       root.applyMinute()
       root.ageMinutes += 1
+      if (nudge.focused) root.focusMinutes += 1
       root.careSum += root.happiness
       root.careCount += 1
       root.maybeEvolve()
@@ -712,6 +746,13 @@ Item {
   }
 
   // --- ciangotchi: idle nudges -------------------------------------------------
+
+  // Majin Vegeta: a short roaming event that puts the pet in its Majin form.
+  Timer {
+    id: majinTimer
+    interval: 60000
+    onTriggered: root.eventForm = ""
+  }
 
   readonly property alias restless: nudge.restless
   readonly property alias onBreak: nudge.onBreak

@@ -16,6 +16,11 @@ Item {
   property int frameMs: 500
   property bool playing: true
   property color tint: "white"
+  // Second layer (hair, aura, ki): "" = none, "dim" = a dimmed tint, or any
+  // colour string. Drawn from assets/sprites/accent/ when the frame has one.
+  property string accent: ""
+  readonly property color accentTint: accent === "dim"
+    ? Qt.alpha(tint, 0.55) : (accent === "" ? "transparent" : accent)
   property bool mirrored: false
 
   property int frame: 0
@@ -58,6 +63,28 @@ Item {
     source: image
     colorization: 1
     colorizationColor: root.tint
+  }
+
+  // Accent layer: same frame name under accent/. A frame without accent
+  // pixels has no file, which just leaves the layer hidden.
+  Image {
+    id: accentImage
+    anchors.fill: parent
+    source: root.accent === "" ? "" : Qt.resolvedUrl("assets/sprites/accent/" + root.form
+      + "_" + root.resolvedAnim + "_" + (root.frame === 0 ? "a" : "b") + ".png")
+    smooth: false
+    mipmap: false
+    fillMode: Image.PreserveAspectFit
+    mirror: root.mirrored
+    visible: false
+  }
+
+  MultiEffect {
+    anchors.fill: accentImage
+    source: accentImage
+    visible: accentImage.status === Image.Ready
+    colorization: 1
+    colorizationColor: root.accentTint
   }
 
   Timer {
