@@ -352,6 +352,8 @@ PanelWindow {
             root.support = null
             root.petY = root.floorY
             root.action = "idle"
+          } else if (root.petService && root.petService.sleeping) {
+            root.startFlyTo(root.petX, root.floorY, "floor")   // too tired to hover
           } else {
             root.action = "hover"
           }
@@ -434,6 +436,15 @@ PanelWindow {
     running: root.visible && !!root.petService && root.petService.farewellPending
     repeat: true
     onTriggered: root.advanceFarewell()
+  }
+
+  // Dozing off in mid-air: come down first, sleep on the ground.
+  Connections {
+    target: root.petService
+    function onSleepingChanged() {
+      if (root.petService.sleeping && root.action === "hover")
+        root.startFlyTo(root.petX, root.floorY, "floor")
+    }
   }
 
   Connections {
@@ -620,7 +631,9 @@ PanelWindow {
       : (root.action === "held" ? 12 : 0)
     Behavior on rotation { NumberAnimation { duration: 150 } }
 
+    // Only a grounded, standing pet shows as asleep: in the air it lands first.
     readonly property bool asleep: root.petService && root.petService.sleeping
+      && root.action === "idle"
     form: root.petService.displayForm
     accent: root.petService.displayAccent
     anim: {

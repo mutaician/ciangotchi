@@ -98,7 +98,7 @@ Item {
 
   // Hair/aura colour per form; "dim" = a dimmed theme tint.
   readonly property var formAccents: ({
-    pod: "#ff5d7a", base: "dim", ssj: "#ffd23c", ssj2: "#ffd23c",
+    pod: "#ff5d7a", base: "#4b5366", ssj: "#ffd23c", ssj2: "#ffd23c",
     god: "#ff4d5e", blue: "#3fb8ff", ego: "#c04dff", majin: "#ffd23c"
   })
   // A temporary form shown over the real one (Majin, while roaming).
@@ -319,7 +319,7 @@ Item {
       dirtLevel + (orphanCount > 0 ? 0.33 : 0.21) * rates.dirt)
 
     if (sleeping) {
-      tirednessLevel = Math.max(0, tirednessLevel - 2.2)
+      tirednessLevel = Math.max(0, tirednessLevel - 6)   // a short nap: a Saiyan prince does not sleep in
       if (tirednessLevel <= 5) {
         sleeping = false
         // A little hum tells the user it woke up on its own.
@@ -327,7 +327,7 @@ Item {
       }
     } else {
       tirednessLevel = Math.min(100,
-        tirednessLevel + (roaming ? 0.55 : 0.28) * rates.tired)
+        tirednessLevel + (roaming ? 0.3 : 0.15) * rates.tired)
       if (tirednessLevel >= 90) {
         sleeping = true
         playSound("sleep")
