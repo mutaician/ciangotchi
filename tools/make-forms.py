@@ -215,13 +215,6 @@ ARM_DOWN = [(7, 21), (8, 21), (6, 22), (7, 22), (6, 23), (7, 23), (6, 24), (7, 2
             (6, 25), (7, 25), (5, 26), (6, 26), (7, 26), (5, 27), (6, 27), (7, 27)]
 
 
-def arm_up(lift):
-    pts = [(23, 21), (24, 21), (25, 21), (25, 20), (26, 20), (27, 20)]
-    pts += [(x, y) for y in range(11 - lift, 20) for x in (26, 27)]
-    pts += [(x, y) for y in range(7 - lift, 11 - lift) for x in (25, 26, 27, 28)]
-    return pts
-
-
 MEAT = [(x, 12) for x in (27, 28, 29)] + [(x, y) for y in (13, 14, 15) for x in range(26, 31)] \
     + [(x, 16) for x in (27, 28, 29)] + [(28, 17), (28, 18)] \
     + [(x, y) for y in (19, 20) for x in (27, 28, 29)] + [(x, 21) for x in range(23, 29)]
@@ -238,7 +231,7 @@ BOLTS = (  # super saiyan 2 lightning, one set per frame
 # --- aura -----------------------------------------------------------------------
 
 
-def aura(g, level, frame):
+def aura(g, level, frame, floor=True):
     """Flickering outline two pixels off the silhouette, in the accent colour."""
     if level <= 0:
         return
@@ -250,7 +243,7 @@ def aura(g, level, frame):
 
     for y in range(n - 1):
         for x in range(n):
-            if g[y][x] != "." or (9 <= x <= 22 and y >= 20):
+            if g[y][x] != "." or (floor and 9 <= x <= 22 and y >= 20):
                 continue
             d = dist(x, y)
             dash = (x + y + frame * 3) % 6     # diagonal dashes that crawl
@@ -270,7 +263,7 @@ def aura(g, level, frame):
 
 FORMS = {
     #  name     hair      eyes     aura  extras           preview colour
-    "base":  ("flame",  "normal", 0, ("pads",),          "dim"),
+    "base":  ("flame",  "normal", 0, ("pads",),          "#4b5366"),
     "ssj":   ("blades", "normal", 1, (),                 "#ffd23c"),
     "ssj2":  ("spikes", "normal", 2, ("bolts",),         "#ffd23c"),
     "god":   ("flame",  "normal", 1, (),                 "#ff4d5e"),
@@ -278,7 +271,7 @@ FORMS = {
     "ego":   ("spikes", "ego",    3, (),                 "#c04dff"),
     "majin": ("spikes", "majin",  2, ("bolts", "m"),     "#ffd23c"),
 }
-ANIMS = ("idle", "walk", "climb", "eat", "sleep", "rage")
+ANIMS = ("idle", "walk", "fly", "eat", "sleep", "rage")
 
 
 def build(form, anim, frame):
@@ -288,24 +281,24 @@ def build(form, anim, frame):
     if anim == "sleep":
         bob = 1
 
+    if anim == "fly":
+        return build_fly(form, frame)
     torso = {"idle": TORSO_CROSSED, "walk": TORSO_CROSSED, "sleep": TORSO_CROSSED,
-             "climb": TORSO_PLAIN, "eat": TORSO_PLAIN, "rage": TORSO_RAGE}[anim]
-    legs = {"walk": LEGS_FLY, "climb": LEGS_FLY, "rage": LEGS_WIDE}.get(anim, LEGS_STAND)
+             "eat": TORSO_PLAIN, "rage": TORSO_RAGE}[anim]
+    legs = {"walk": LEGS_FLY, "rage": LEGS_WIDE}.get(anim, LEGS_STAND)
     put(g, torso, 20)
     put(g, legs, 27)
     if "pads" in extras:
         put(g, PADS, 18)
-    if anim in ("climb", "eat"):
+    if anim == "eat":
         dots(g, ARM_DOWN)
-    if anim == "climb":
-        dots(g, arm_up(frame))
     if anim == "eat":
         dots(g, MEAT)
         if frame == 1:
             dots(g, BITE, "_")
 
     kind = {"eat": "eat" if frame == 0 else "chew"}.get(anim, anim)
-    if anim in ("walk", "climb"):
+    if anim == "walk":
         kind = "plain"
     put(g, face(kind, eyes), 12 + bob)
     put(g, HAIR[hair], bob)
@@ -315,12 +308,50 @@ def build(form, anim, frame):
     if anim == "sleep":
         dots(g, ZED_SMALL if frame == 0 else ZED_BIG, "A")
     else:
-        if anim in ("walk", "climb"):   # ki under the feet
+        if anim == "walk":   # ki under the feet
             ki = [(16, 31), (20, 31), (7, 31)] if frame == 0 else [(18, 31), (22, 31), (6, 30)]
             dots(g, ki, "A")
         aura(g, level + (1 if anim == "rage" else 0), frame)
         if "bolts" in extras:
             dots(g, BOLTS[frame], "A")
+    return ["".join(r) for r in g]
+
+
+# --- flying: Superman pose, facing right -----------------------------------------
+# The head stays upright and looks at us; the body streams out behind it. The
+# game tilts and mirrors the whole sprite to point where the pet is going.
+
+
+def build_fly(form, frame):
+    hair, eyes, level, extras, _ = FORMS[form]
+    g = new()
+    bob = frame            # a small up-and-down while it flies
+    hx, hy = 6, 5 + bob    # the head's offset
+    body = []
+    by = 23 + bob
+    body += [(x, y) for y in range(by, by + 7) for x in range(8, 23)]       # torso
+    body += [(x, y) for y in range(by + 1, by + 6) for x in range(5, 8)]    # hips
+    top, bot = (by + 1, by + 4) if frame == 0 else (by, by + 5)             # legs scissor
+    body += [(x, y) for y in (top, top + 1) for x in range(0, 5)]
+    body += [(x, y) for y in (bot, bot + 1) for x in range(0, 5)]
+    body += [(x, y) for y in (by + 2, by + 3, by + 4) for x in range(23, 27)]  # forearm
+    body += [(x, y) for y in range(by + 1, by + 6) for x in range(27, 31)]  # fist
+    dots(g, body)
+    dots(g, [(x, by + 4) for x in range(10, 18)], "_")                      # arm line across the chest
+    dots(g, [(29, by + 3), (29, by + 4)], "_")                              # knuckles
+    if "pads" in extras:
+        put(g, PADS, by - 3, 4)
+    put(g, face("plain", eyes), 12 + hy, hx)
+    put(g, HAIR[hair], hy, hx)
+    if "m" in extras:
+        put(g, MAJIN_M, 11 + hy, 13 + hx)
+    # ki trailing behind, in the accent colour
+    trail = [(1, 18), (3, 20), (5, 17), (0, 30), (4, 31), (8, 29)] if frame == 0 \
+        else [(0, 19), (2, 17), (4, 20), (1, 31), (6, 30), (3, 29)]
+    dots(g, trail, "A")
+    aura(g, level, frame, floor=False)
+    if "bolts" in extras:
+        dots(g, [(x + 4, y + 2) for x, y in BOLTS[frame]], "A")
     return ["".join(r) for r in g]
 
 

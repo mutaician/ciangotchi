@@ -6,10 +6,10 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs.Commons
 
-// The pet's playground: a transparent full-screen overlay where it wanders the
-// bottom edge, climbs up the sides of windows whose top border leaves enough
-// headroom, walks along their tops, and hops back down. Everything is
-// click-through except the pet itself (mask), so the desktop stays usable.
+// The pet's playground: a transparent full-screen overlay where it walks along
+// the bottom edge and the tops of your windows, and flies anywhere on screen,
+// hovering in the air or landing on a window. Everything is click-through
+// except the pet itself (mask), so the desktop stays usable.
 //
 // Window geometry comes from the Hyprland IPC via Quickshell — no shell
 // commands. Coordinates are used as-is, which is correct at monitor scale 1;
@@ -130,7 +130,7 @@ PanelWindow {
       var p = platforms[i]
       if (p.address === support.address) {
         support = p
-        if (action !== "climb" && action !== "fall") {
+        if (action !== "fly" && action !== "fall") {
           petY = p.y
           if (petX < p.x1 || petX + spriteSize > p.x2) startFall()
         }
@@ -145,15 +145,22 @@ PanelWindow {
 
   property real petX: 0
   property real petY: 0            // the pet's feet line
-  property string action: "idle"   // idle | walk | climb | fall
+  // idle | walk | fly | hover | fall (+ held, stunned, beamup)
+  property string action: "idle"
   property real targetX: 0
   property real targetY: 0
-  property var pendingClimb: null  // {wallX, platform} after the walk phase
+  // Flight: any direction, anywhere on screen. A flight ends either in the
+  // air (the pet hovers for a moment) or on a surface it lands on.
+  property real flyTargetX: 0
+  property real flyTargetY: 0
+  property string flyLanding: ""   // "" = hover | "floor" | "platform"
+  property var flyPlatform: null
+  property real flyTilt: 0         // degrees, nose down positive
   property bool facingLeft: false
 
   // Speeds follow the sprite size so a bigger pet is not a slower one.
-  readonly property real walkSpeed: spriteSize * 1.4   // px/s
-  readonly property real climbSpeed: spriteSize * 1.0
+  readonly property real walkSpeed: spriteSize * 1.0   // px/s
+  readonly property real flySpeed: spriteSize * 2.0
   readonly property real fallSpeed: spriteSize * 7
 
   function currentSurfaceBounds() {
@@ -189,7 +196,6 @@ PanelWindow {
   property real beamTopY: 0
 
   function startFall() {
-    pendingClimb = null
     if (action !== "fall") fallStartY = petY
     action = "fall"
   }
@@ -204,7 +210,6 @@ PanelWindow {
       finishReturn()
       return
     }
-    pendingClimb = null
     support = null
     gentleFall = false
     beamX = Math.max(spriteSize / 2,
@@ -273,29 +278,41 @@ PanelWindow {
     onTriggered: if (root.action === "stunned") root.action = "idle"
   }
 
-  function startWalkTo(x, climb) {
+  function startWalkTo(x) {
     var bounds = currentSurfaceBounds()
     targetX = Math.max(bounds.x1, Math.min(bounds.x2 - spriteSize, x))
-    pendingClimb = climb || null
     facingLeft = targetX < petX
     action = "walk"
   }
 
-  // Climbable walls from here: edges of platforms strictly above whose base
-  // is reachable by walking on the current surface.
-  function climbCandidates() {
-    var bounds = currentSurfaceBounds()
-    var found = []
-    for (var i = 0; i < platforms.length; i++) {
-      var p = platforms[i]
-      if (support && p.address === support.address) continue
-      if (p.y >= petY - spriteSize) continue
-      if (p.x1 >= bounds.x1 && p.x1 <= bounds.x2 - spriteSize)
-        found.push({ wallX: p.x1, platform: p })
-      else if (p.x2 - spriteSize >= bounds.x1 && p.x2 <= bounds.x2)
-        found.push({ wallX: p.x2 - spriteSize, platform: p })
+  // Take off toward (x, y), the pet's feet line. landing: "" hover on arrival,
+  // "floor" or "platform" (with its object) settle there.
+  function startFlyTo(x, y, landing, platform) {
+    flyTargetX = Math.max(0, Math.min(width - spriteSize, x))
+    flyTargetY = Math.max(headroom, Math.min(floorY, y))
+    flyLanding = landing || ""
+    flyPlatform = platform || null
+    support = null
+    if (Math.abs(flyTargetX - petX) > 2) facingLeft = flyTargetX < petX
+    action = "fly"
+  }
+
+  function flyToAir() {
+    startFlyTo(Math.random() * (width - spriteSize),
+      headroom + Math.random() * Math.max(1, floorY - headroom - 8), "")
+  }
+
+  // Land on a window top (when there is one) or the floor, somewhere new.
+  function flyToSurface() {
+    var others = []
+    for (var i = 0; i < platforms.length; i++)
+      if (!support || platforms[i].address !== support.address) others.push(platforms[i])
+    if (others.length > 0 && Math.random() < 0.6) {
+      var p = others[Math.floor(Math.random() * others.length)]
+      startFlyTo(p.x1 + Math.random() * Math.max(0, p.x2 - p.x1 - spriteSize), p.y, "platform", p)
+    } else {
+      startFlyTo(Math.random() * (width - spriteSize), floorY, "floor")
     }
-    return found
   }
 
   // --- physics ---------------------------------------------------------------
@@ -311,24 +328,38 @@ PanelWindow {
         var step = root.walkSpeed * dt
         if (Math.abs(root.targetX - root.petX) <= step) {
           root.petX = root.targetX
-          if (root.pendingClimb) {
-            root.targetY = root.pendingClimb.platform.y
-            root.action = "climb"
-          } else {
-            root.action = "idle"
-          }
+          root.action = "idle"
         } else {
           root.petX += root.petX < root.targetX ? step : -step
         }
-      } else if (root.action === "climb") {
-        var rise = root.climbSpeed * dt
-        if (root.petY - root.targetY <= rise) {
-          root.petY = root.targetY
-          root.support = root.pendingClimb ? root.pendingClimb.platform : root.support
-          root.pendingClimb = null
-          root.action = "idle"
+      } else if (root.action === "fly") {
+        var dx = root.flyTargetX - root.petX
+        var dy = root.flyTargetY - root.petY
+        var dist = Math.sqrt(dx * dx + dy * dy)
+        var move = root.flySpeed * dt
+        if (dist <= move) {
+          root.petX = root.flyTargetX
+          root.petY = root.flyTargetY
+          root.flyTilt = 0
+          if (root.flyLanding === "platform" && root.flyPlatform) {
+            // Land on the window if it is still there, else drop like any fall.
+            var still = null
+            for (var i = 0; i < root.platforms.length; i++)
+              if (root.platforms[i].address === root.flyPlatform.address) still = root.platforms[i]
+            if (still) { root.support = still; root.petY = still.y; root.action = "idle" }
+            else root.startFall()
+          } else if (root.flyLanding === "floor") {
+            root.support = null
+            root.petY = root.floorY
+            root.action = "idle"
+          } else {
+            root.action = "hover"
+          }
         } else {
-          root.petY -= rise
+          root.petX += dx / dist * move
+          root.petY += dy / dist * move
+          root.flyTilt = Math.max(-70, Math.min(70,
+            Math.atan2(dy, Math.abs(dx)) * 180 / Math.PI))
         }
       } else if (root.action === "beamup") {
         var pull = root.fallSpeed * dt
@@ -367,12 +398,13 @@ PanelWindow {
   function advanceFarewell() {
     var svc = petService
     if (!svc || !svc.farewellPending) { leavingPhase = 0; return }
+    if (action === "hover") { startFlyTo(petX, floorY, "floor"); return }
     if (action !== "idle") return
     if (leavingPhase === 0) {
       if (support) { startFall(); return }
       leavingCornerX = petX + spriteSize / 2 < width / 2 ? 0 : width - spriteSize
       leavingPhase = 1
-      if (Math.abs(leavingCornerX - petX) > 1) startWalkTo(leavingCornerX, null)
+      if (Math.abs(leavingCornerX - petX) > 1) startWalkTo(leavingCornerX)
     } else if (leavingPhase === 1) {
       leavingPhase = 2
       facingLeft = leavingCornerX > 0
@@ -393,7 +425,6 @@ PanelWindow {
       // Past the clamp on purpose: the target is just beyond the edge.
       root.targetX = root.leavingCornerX > 0 ? root.width + 4 : -root.spriteSize - 4
       root.facingLeft = root.leavingCornerX === 0
-      root.pendingClimb = null
       root.action = "walk"
     }
   }
@@ -417,24 +448,27 @@ PanelWindow {
   Timer {
     id: brain
     interval: 1500
-    running: root.visible && root.action === "idle"
+    running: root.visible && (root.action === "idle" || root.action === "hover")
       && !(root.petService && (root.petService.sleeping || root.petService.farewellPending))
     repeat: true
     onTriggered: {
-      interval = 2500 + Math.floor(Math.random() * 5000)
       var roll = Math.random()
-      var climbs = root.climbCandidates()
-
-      if (roll < 0.25 && climbs.length > 0) {
-        var pick = climbs[Math.floor(Math.random() * climbs.length)]
-        root.startWalkTo(pick.wallX, pick)
-      } else if (roll < 0.40 && root.support) {
-        // Hop off the current window.
-        root.startFall()
+      if (root.action === "hover") {
+        interval = 1500 + Math.floor(Math.random() * 2500)
+        // Mostly keeps flying around; sometimes lands somewhere.
+        if (roll < 0.6) root.flyToAir()
+        else root.flyToSurface()
+        return
+      }
+      interval = 2500 + Math.floor(Math.random() * 5000)
+      if (roll < 0.30) {
+        root.flyToAir()
+      } else if (roll < 0.45) {
+        root.flyToSurface()
       } else if (roll < 0.85) {
         var bounds = root.currentSurfaceBounds()
         var span = Math.max(0, bounds.x2 - bounds.x1 - root.spriteSize)
-        root.startWalkTo(bounds.x1 + Math.random() * span, null)
+        root.startWalkTo(bounds.x1 + Math.random() * span)
       }
       // else: lazing around is also living.
     }
@@ -485,7 +519,6 @@ PanelWindow {
 
   function resetPosition() {
     support = null
-    pendingClimb = null
     var svc = petService
     var w = width > 0 ? width : (screen ? screen.width : 0)
     if (svc && svc.returnRequested) {
@@ -581,9 +614,9 @@ PanelWindow {
     height: root.spriteSize
     x: root.petX
     y: root.petY - height
-    // Dedicated climb frames are drawn upright (back to us, arms reaching);
-    // only the walk-frame fallback needs the old -90° tilt.
-    rotation: root.action === "climb" && sprite.resolvedAnim !== "climb" ? -90
+    // The fly sprite faces right, flat; it tilts toward where it is going.
+    rotation: root.action === "fly"
+      ? (root.facingLeft ? -root.flyTilt : root.flyTilt)
       : (root.action === "held" ? 12 : 0)
     Behavior on rotation { NumberAnimation { duration: 150 } }
 
@@ -594,17 +627,18 @@ PanelWindow {
       if (asleep) return "sleep"
       switch (root.action) {
       case "walk":
+      case "hover":
       case "fall":
       case "held": return "walk" // held: legs kicking in protest
-      case "climb": return "climb"
+      case "fly": return "fly"
       case "stunned": return "stunned"
       default: return root.petService.transientAnim !== ""
         ? root.petService.transientAnim
         : (root.petService.eventForm !== "" ? "rage" : root.petService.stateAnim)
       }
     }
-    // A climb without its dedicated sprite reuses the walk frames (rotated).
-    fallbackAnim: root.action === "climb" ? "walk" : "idle"
+    // A flight without its dedicated sprite reuses the hover frames.
+    fallbackAnim: root.action === "fly" ? "walk" : "idle"
     frameMs: asleep ? 1200 : (root.action === "idle" ? 500 : 220)
     tint: Color.foreground
     mirrored: root.facingLeft
@@ -643,7 +677,6 @@ PanelWindow {
           if (Math.abs(p.x - pressGlobalX) < 8 && Math.abs(p.y - pressGlobalY) < 8) return
           dragging = true
           root.action = "held"
-          root.pendingClimb = null
           root.support = null
           root.gentleFall = false
           root.beamActive = false
