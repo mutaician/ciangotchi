@@ -754,6 +754,26 @@ Item {
     onTriggered: root.eventForm = ""
   }
 
+  // --- TEMP: form testing, remove once the forms are approved ----------------
+  // Cycles pod -> … -> ego -> majin -> pod. It rewrites the saved form and
+  // focus minutes, so a real run restarts from the pod afterwards.
+  function testCycleForm() {
+    var order = knownForms.concat(["majin"])
+    var current = eventForm !== "" ? "majin" : form
+    var next = order[(order.indexOf(current) + 1) % order.length]
+    majinTimer.stop()
+    if (next === "majin") {
+      eventForm = "majin"
+      return
+    }
+    eventForm = ""
+    stage = next
+    form = next
+    for (var i = 0; i < ladder.length; i++) if (ladder[i].stage === next) focusMinutes = ladder[i].at
+    flushPet()
+  }
+  function testRage() { nudge.previewRestless() }
+
   readonly property alias restless: nudge.restless
   readonly property alias onBreak: nudge.onBreak
   readonly property alias breakMinutesLeft: nudge.breakMinutesLeft

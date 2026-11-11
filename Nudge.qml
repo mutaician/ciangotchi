@@ -118,6 +118,12 @@ Item {
     onTriggered: root.restless = false
   }
 
+  // TEMP (form testing): act up for a while without waiting for idleness.
+  function previewRestless() {
+    restless = true
+    calmTimer.restart()
+  }
+
   // Back to normal: you are here, or a break has started.
   function settle() {
     calmTimer.stop()

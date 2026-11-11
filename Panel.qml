@@ -888,6 +888,28 @@ Panel {
               nudgesEnabled: root.petService.settings.nudgesEnabled === false })
           }
 
+          // TEMP: look at every form without earning it. Remove later.
+          Row {
+            spacing: Style.space(8)
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            Button {
+              text: root.ready ? "Test form: " + (root.petService.eventForm !== ""
+                ? root.petService.eventForm : root.petService.form) : "Test form"
+              tooltipText: "Temporary: cycle through every form (rewrites your progress)"
+              fontFamily: root.fontFamily
+              enabled: root.ready
+              onClicked: root.petService.testCycleForm()
+            }
+            Button {
+              text: "Test nag"
+              tooltipText: "Temporary: play the nagging animation"
+              fontFamily: root.fontFamily
+              enabled: root.ready
+              onClicked: root.petService.testRage()
+            }
+          }
+
           Row {
             spacing: Style.space(8)
             anchors.horizontalCenter: parent.horizontalCenter
