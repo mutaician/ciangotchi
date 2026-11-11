@@ -44,8 +44,9 @@ Item {
     // Random links the pet may open, plus your browser's bookmarks.
     includeBookmarks: true,
     bookmarksPath: "",
+    // Random FMHY links (a daily-refreshed list, see tools/refresh-fmhy.sh).
+    includeFmhy: true,
     links: [
-      "https://fmhy.net",
       "https://x.com/i/bookmarks",
       "https://www.youtube.com/playlist?list=WL"
     ]

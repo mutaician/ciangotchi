@@ -165,6 +165,21 @@ Item {
   }
 
   property var bookmarkUrls: []
+  property var fmhyUrls: []
+  property var extraUrls: []
+
+  readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME")
+    || ((Quickshell.env("HOME") || "") + "/.local/state")) + "/omarchy"
+
+  function parseLines(text) {
+    var out = []
+    var lines = text.split("\n")
+    for (var i = 0; i < lines.length; i++) {
+      var u = lines[i].trim()
+      if (isWebUrl(u)) out.push(u)
+    }
+    return out
+  }
 
   function isWebUrl(u) {
     return typeof u === "string" && /^https?:\/\/\S+$/.test(u)
@@ -200,15 +215,22 @@ Item {
     return out
   }
 
-  // Half the time one of your own links (fmhy, X bookmarks, YouTube Watch
-  // Later…), half the time a random browser bookmark; whichever list exists
-  // if the other is empty.
+  // The pool is several sources; a nudge picks one non-empty source at
+  // random, then a random link from it, so a 24k-link FMHY list cannot
+  // drown out your own links:
+  //   settings.links          your hand-picked links
+  //   browser bookmarks       Brave, read from the Bookmarks file
+  //   FMHY                    daily refresh by tools/refresh-fmhy.sh
+  //   ciangotchi-extra-links.txt   one URL per line; any script can write it
   function pickLink() {
+    var sources = []
     var mine = customLinks()
-    var marks = cfg.includeBookmarks === false ? [] : bookmarkUrls
-    if (mine.length === 0 && marks.length === 0) return ""
-    var useMine = marks.length === 0 || (mine.length > 0 && Math.random() < 0.5)
-    return pick(useMine ? mine : marks)
+    if (mine.length > 0) sources.push(mine)
+    if (cfg.includeBookmarks !== false && bookmarkUrls.length > 0) sources.push(bookmarkUrls)
+    if (cfg.includeFmhy !== false && fmhyUrls.length > 0) sources.push(fmhyUrls)
+    if (extraUrls.length > 0) sources.push(extraUrls)
+    if (sources.length === 0) return ""
+    return pick(pick(sources))
   }
 
   function openLink(url) {
@@ -225,12 +247,42 @@ Item {
     }
   }
 
-  // Bookmarks change slowly: read once the pet is up, then hourly.
+  Process {
+    id: fmhyReader
+    command: ["head", "-c", "8000000", root.stateDir + "/ciangotchi-fmhy.txt"]
+    stdout: StdioCollector { id: fmhyOut }
+    onExited: function(exitCode) {
+      if (exitCode === 0) root.fmhyUrls = root.parseLines(fmhyOut.text)
+    }
+  }
+
+  Process {
+    id: extraReader
+    command: ["head", "-c", "2000000", root.stateDir + "/ciangotchi-extra-links.txt"]
+    stdout: StdioCollector { id: extraOut }
+    onExited: function(exitCode) {
+      if (exitCode === 0) root.extraUrls = root.parseLines(extraOut.text)
+    }
+  }
+
+  // The script only downloads when its file is over a day old.
+  Process {
+    id: fmhyRefresher
+    command: ["sh", Qt.resolvedUrl("tools/refresh-fmhy.sh").toString().replace("file://", "")]
+    onExited: fmhyReader.running = true
+  }
+
+  // Link sources change slowly: read them once the pet is up, then hourly.
   Timer {
     interval: 60 * 60 * 1000
     running: !!root.petService && root.petService.initialized
     repeat: true
     triggeredOnStart: true
-    onTriggered: bookmarksReader.running = true
+    onTriggered: {
+      bookmarksReader.running = true
+      extraReader.running = true
+      fmhyReader.running = true
+      if (root.cfg.includeFmhy !== false) fmhyRefresher.running = true
+    }
   }
 }
