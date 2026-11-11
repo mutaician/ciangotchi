@@ -10,7 +10,7 @@ DB="$HOME/.local/share/tweethoarder/tweethoarder.db"
 mkdir -p "$DIR"
 [ -x "$TH" ] || { echo "tweethoarder not installed" >&2; exit 1; }
 
-python3 - "$TH" <<'PY' || exit 1
+/usr/bin/python3 - "$TH" <<'PY' || exit 1
 import os, sys
 from yt_dlp.cookies import extract_cookies_from_browser
 jar = extract_cookies_from_browser('brave', keyring='GNOMEKEYRING')
@@ -25,7 +25,7 @@ os.execve(sys.argv[1], [sys.argv[1], 'sync', 'bookmarks', '--all'], env)
 PY
 
 [ -f "$DB" ] || exit 1
-python3 - "$DB" "$DIR/x-bookmarks.txt" <<'PY'
+/usr/bin/python3 - "$DB" "$DIR/x-bookmarks.txt" <<'PY'
 import os, sqlite3, sys
 db = sqlite3.connect('file:%s?mode=ro' % sys.argv[1], uri=True)
 rows = db.execute("""select t.author_username, t.id from collections c
