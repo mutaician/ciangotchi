@@ -107,7 +107,8 @@ Item {
   // --- derived needs ---------------------------------------------------------
 
   readonly property real hunger: Math.max(0, Math.min(100, hungerLevel))
-  readonly property real dirtiness: Math.max(0, Math.min(100, dirtLevel))
+  // Hygiene was removed from ciangotchi: the pet never gets dirty.
+  readonly property real dirtiness: 0
   readonly property real tiredness: Math.max(0, Math.min(100, tirednessLevel))
   readonly property real boredom: Math.max(0, Math.min(100, boredomLevel))
   // Affection is a cuddle-session need: it fills over active time and each

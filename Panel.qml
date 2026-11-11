@@ -50,10 +50,6 @@ Panel {
         : petService.eating ? "Nom nom nom…"
         : petIsOut ? "It's out playing — call it home first"
         : "A good meal, hunger back to zero" },
-    { label: "Hygiene", value: petService.dirtiness,
-      hint: petIsOut ? "wash it at home: press and scrub it with your mouse"
-        : "press and scrub it with your mouse to wash it",
-      action: "", actionLabel: "", actionTip: "" },
     { label: "Energy", value: petService.tiredness,
       hint: petService.sleeping ? "recovering — Zzz…" : "naps when exhausted",
       action: "", actionLabel: "", actionTip: "" },
