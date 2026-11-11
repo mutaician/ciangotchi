@@ -715,7 +715,13 @@ Item {
   readonly property alias restless: nudge.restless
   readonly property alias onBreak: nudge.onBreak
   readonly property alias breakMinutesLeft: nudge.breakMinutesLeft
-  function startBreak() { nudge.startBreak(Number(settings.breakMinutes) || 30) }
+  readonly property alias breakLabel: nudge.breakLabel
+  readonly property int breakMinutes: {
+    var v = Number(settings.breakMinutes)
+    return isFinite(v) && v > 0 ? Math.min(480, Math.round(v)) : 30
+  }
+  // minutes: how long; 0 = until the user ends it.
+  function startBreak(minutes) { nudge.startBreak(minutes) }
   function endBreak() { nudge.endBreak() }
   Nudge {
     id: nudge

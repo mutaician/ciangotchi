@@ -38,9 +38,13 @@ Item {
 
   property double nowMs: Date.now()
   readonly property double breakUntilMs: Number(cfg.breakUntilMs) || 0
-  readonly property bool onBreak: breakUntilMs > nowMs
-  readonly property int breakMinutesLeft: onBreak
+  // -1 = a break with no end, until you turn nudges back on.
+  readonly property bool breakIndefinite: breakUntilMs === -1
+  readonly property bool onBreak: breakIndefinite || breakUntilMs > nowMs
+  readonly property int breakMinutesLeft: onBreak && !breakIndefinite
     ? Math.ceil((breakUntilMs - nowMs) / 60000) : 0
+  readonly property string breakLabel: !onBreak ? ""
+    : breakIndefinite ? "until you end it" : breakMinutesLeft + " min left"
 
   Timer {
     interval: 15000
@@ -50,10 +54,12 @@ Item {
     onTriggered: root.nowMs = Date.now()
   }
 
+  // minutes <= 0 means no end: the break lasts until endBreak().
   function startBreak(minutes) {
     if (!petService) return
     nowMs = Date.now()
-    petService.updateSettings({ breakUntilMs: nowMs + minutes * 60000 })
+    petService.updateSettings({
+      breakUntilMs: minutes > 0 ? nowMs + minutes * 60000 : -1 })
     settle()
   }
 

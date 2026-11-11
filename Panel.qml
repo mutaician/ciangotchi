@@ -921,6 +921,44 @@ Panel {
             onClicked: root.petService.updateSettings({
               nudgesEnabled: root.petService.settings.nudgesEnabled === false })
           }
+
+          Row {
+            spacing: Style.space(8)
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Break length"
+              color: Qt.alpha(root.foreground, 0.7)
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              renderType: Text.NativeRendering
+            }
+            Button {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "-"
+              fontFamily: root.fontFamily
+              enabled: root.ready
+              onClicked: root.petService.updateSettings({
+                breakMinutes: Math.max(5, root.petService.breakMinutes - 5) })
+            }
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: (root.ready ? root.petService.breakMinutes : 30) + " min"
+              color: root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              renderType: Text.NativeRendering
+            }
+            Button {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "+"
+              fontFamily: root.fontFamily
+              enabled: root.ready
+              onClicked: root.petService.updateSettings({
+                breakMinutes: Math.min(480, root.petService.breakMinutes + 5) })
+            }
+          }
         }
 
         // --- go play / come home --------------------------------------------
@@ -942,15 +980,31 @@ Panel {
         // --- ciangotchi: break mode -----------------------------------------
         Button {
           width: parent.width
-          visible: root.ready && !settingsControl.open
-          text: root.ready && root.petService.onBreak
-            ? "End break (" + root.petService.breakMinutesLeft + " min left)"
-            : "Take a break"
-          tooltipText: "Pause the idle nudges"
+          visible: root.ready && !settingsControl.open && root.petService.onBreak
+          text: root.ready ? "End break (" + root.petService.breakLabel + ")" : ""
+          tooltipText: "Turn the idle nudges back on"
           fontFamily: root.fontFamily
-          enabled: root.ready
-          onClicked: root.petService.onBreak
-            ? root.petService.endBreak() : root.petService.startBreak()
+          onClicked: root.petService.endBreak()
+        }
+        Row {
+          width: parent.width
+          spacing: Style.space(8)
+          visible: root.ready && !settingsControl.open && !root.petService.onBreak
+
+          Button {
+            width: (parent.width - parent.spacing) / 2
+            text: root.ready ? "Break " + root.petService.breakMinutes + " min" : "Break"
+            tooltipText: "Pause the idle nudges for this long (change it in settings)"
+            fontFamily: root.fontFamily
+            onClicked: root.petService.startBreak(root.petService.breakMinutes)
+          }
+          Button {
+            width: (parent.width - parent.spacing) / 2
+            text: "Break until back"
+            tooltipText: "Pause the idle nudges until you end the break yourself"
+            fontFamily: root.fontFamily
+            onClicked: root.petService.startBreak(0)
+          }
         }
 
       }

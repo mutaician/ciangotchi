@@ -66,7 +66,7 @@ BarWidget {
     dimmed: !root.serviceReady
     tooltipText: root.serviceReady
       ? (root.petService.onBreak
-          ? "On a break — " + root.petService.breakMinutesLeft + " min left"
+          ? "On a break — " + root.petService.breakLabel
           : root.petService.moodLabel)
       : "Ciangotchi"
     fixedWidth: root.vertical ? -1 : Math.round(content.implicitWidth + scaledHorizontalMargin * 2)
