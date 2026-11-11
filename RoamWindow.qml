@@ -661,7 +661,11 @@ PanelWindow {
           root.petY = Math.max(root.headroom, root.petY - 6)
           root.startFall()
         } else {
-          if (root.petService) root.petService.petThePet()
+          if (root.petService) {
+            root.petService.petThePet()
+            if (root.petService.settings.clickOpensLink !== false)
+              root.petService.requestLink()
+          }
           heart.pop()
         }
       }

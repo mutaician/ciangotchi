@@ -46,6 +46,8 @@ Item {
     bookmarksPath: "",
     // Random FMHY links (a daily-refreshed list, see tools/refresh-fmhy.sh).
     includeFmhy: true,
+    // Clicking the roaming pet fetches a random link.
+    clickOpensLink: true,
     links: []
   })
   // Effects volume, 0 (mute) to 1.
@@ -722,6 +724,7 @@ Item {
   // minutes: how long; 0 = until the user ends it.
   function startBreak(minutes) { nudge.startBreak(minutes) }
   function endBreak() { nudge.endBreak() }
+  function requestLink() { nudge.requestLink() }
   Nudge {
     id: nudge
     petService: root

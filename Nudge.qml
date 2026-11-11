@@ -234,6 +234,23 @@ Item {
     return pick(pick(sources))
   }
 
+  // The pet fetches a link on request (a click while it roams). A short
+  // cooldown stops a double click from opening two tabs.
+  property double lastRequestMs: 0
+  function requestLink() {
+    if (!petService) return
+    var now = Date.now()
+    if (now - lastRequestMs < 3000) return
+    lastRequestMs = now
+    var url = pickLink()
+    if (url === "") {
+      petService.notify("Ciangotchi", "I have no links to fetch yet.")
+      return
+    }
+    openLink(url)
+    petService.notify("Ciangotchi", "Fetched: " + hostOf(url))
+  }
+
   function openLink(url) {
     if (!isWebUrl(url)) return
     Quickshell.execDetached(["xdg-open", url])
